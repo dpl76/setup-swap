@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup Swap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --sand: #EDE6D6; --sand-deep: #E2D9C4; --bark: #2E2620; --bark-soft: #5C5247;
+    --moss: #56664A; --moss-deep: #404D37; --amber: #D98E3F; --clay: #B5563A;
+    --teal: #3E6B66; --card: #FBF8F1; --line: #D8CDB6; --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--sand);color:var(--bark);font-family:'Public Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  button,input,textarea{font-family:'Public Sans',sans-serif;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line);background:var(--sand);position:sticky;top:0;z-index:50;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--moss),var(--moss-deep));position:relative;flex-shrink:0;}
+  .logo-mark::after{content:"";position:absolute;inset:6px;border:1.5px solid var(--sand);border-radius:4px;opacity:0.6;}
+  .logo-text{font-family:'Fraunces',serif;font-size:20px;font-weight:700;}
+  nav{display:flex;gap:18px;align-items:center;}
+  .who{font-size:13px;color:var(--bark-soft);}
+  .who b{color:var(--bark);}
+  .btn{border:none;cursor:pointer;font-weight:600;border-radius:100px;font-size:13.5px;padding:9px 16px;}
+  .btn-primary{background:var(--clay);color:#fff;}
+  .btn-primary:hover{background:#9c4a31;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--bark-soft);}
+  .btn-ghost:hover{border-color:var(--bark-soft);}
+  .btn:disabled{opacity:0.6;cursor:default;}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:0 28px;}
+  .hero{padding:40px 0 22px;}
+  .hero h1{font-size:34px;margin:0 0 8px;}
+  .hero p{color:var(--bark-soft);margin:0;max-width:480px;}
+
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:22px;}
+  .filter-chip{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:100px;font-size:13px;font-weight:600;color:var(--bark-soft);cursor:pointer;}
+  .filter-chip.active{background:var(--moss-deep);border-color:var(--moss-deep);color:#fff;}
+
+  .feed{padding-bottom:70px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media (max-width:900px){.feed{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:600px){.feed{grid-template-columns:1fr;} header{padding:12px 16px;} .wrap{padding:0 16px;} .hero h1{font-size:27px;}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
+  .card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -16px rgba(46,38,32,.35);}
+  .card-photo{height:180px;background-size:cover;background-position:center;position:relative;background-color:var(--sand-deep);}
+  .species-eyebrow{position:absolute;top:10px;left:10px;background:rgba(46,38,32,.78);color:var(--sand);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:100px;}
+  .repost-badge{position:absolute;top:10px;right:10px;background:var(--amber);color:var(--bark);font-size:10px;font-weight:700;padding:4px 8px;border-radius:100px;}
+  .photo-count{position:absolute;bottom:9px;right:9px;background:rgba(46,38,32,.78);color:var(--sand);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:100px;}
+  .card-body{padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;}
+  .card-title{font-size:16px;margin:0 0 4px;line-height:1.25;}
+  .card-meta{font-size:12.5px;color:var(--bark-soft);margin-bottom:10px;}
+  .card-meta b{color:var(--bark);}
+  .tag-rack{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+  .tag{display:flex;align-items:center;gap:5px;background:var(--sand-deep);border:1px dashed var(--bark-soft);color:var(--bark-soft);font-size:11px;font-weight:600;padding:3px 8px 3px 6px;border-radius:5px 5px 5px 1px;}
+  .tag::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--moss);flex-shrink:0;}
+  .card-actions{display:flex;gap:6px;margin-top:auto;padding-top:10px;border-top:1px solid var(--line);}
+  .action-btn{flex:1;border:1px solid var(--line);background:transparent;padding:7px 8px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;color:var(--bark-soft);}
+  .action-btn.repost:hover{border-color:var(--teal);color:var(--teal);}
+  .action-btn.suggest:hover{border-color:var(--clay);color:var(--clay);}
+  .comment-count{font-size:11.5px;color:var(--bark-soft);display:flex;align-items:center;padding:0 3px;white-space:nowrap;}
+
+  .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--bark-soft);}
+  .empty-state h3{margin-bottom:6px;color:var(--bark);}
+
+  .overlay{display:none;position:fixed;inset:0;background:rgba(46,38,32,.55);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .overlay.show{display:flex;}
+  .panel{background:var(--card);border-radius:18px;max-width:480px;width:100%;padding:26px;position:relative;max-height:90vh;overflow-y:auto;}
+  .close-btn{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(46,38,32,.1);color:var(--bark);font-size:13px;cursor:pointer;}
+
+  .auth-tabs{display:flex;gap:6px;margin-bottom:18px;}
+  .auth-tab{flex:1;text-align:center;padding:8px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--bark-soft);}
+  .auth-tab.active{background:var(--moss-deep);color:#fff;}
+  .field-label{display:block;font-size:12px;font-weight:700;color:var(--bark-soft);margin-bottom:6px;}
+  .field-input{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13.5px;background:var(--sand);margin-bottom:14px;}
+  .form-error{color:var(--clay);font-size:12.5px;margin:-6px 0 12px;}
+  .form-note{font-size:11.5px;color:var(--bark-soft);margin-top:4px;}
+
+  .detail-panel{background:var(--card);border-radius:18px;max-width:920px;width:100%;max-height:88vh;overflow-y:auto;display:grid;grid-template-columns:1.1fr 1fr;position:relative;}
+  @media (max-width:740px){.detail-panel{grid-template-columns:1fr;}}
+  .detail-gallery{background:var(--bark);}
+  .gallery-main{height:320px;background-size:cover;background-position:center;background-color:#1c1712;}
+  .gallery-thumbs{display:flex;gap:6px;padding:8px;flex-wrap:wrap;}
+  .thumb{width:54px;height:40px;border-radius:6px;background-size:cover;background-position:center;opacity:.55;cursor:pointer;border:2px solid transparent;}
+  .thumb.active{opacity:1;border-color:var(--amber);}
+  .detail-content{padding:24px 24px 28px;}
+  .species-eyebrow.static{background:var(--moss-deep);color:var(--sand);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:100px;display:inline-block;margin-bottom:9px;}
+  .detail-title{margin:0 0 6px;font-size:22px;line-height:1.2;}
+  .detail-caption{color:var(--bark-soft);font-size:14px;line-height:1.5;margin:12px 0 20px;white-space:pre-wrap;}
+  .section-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--bark-soft);margin:0 0 9px;}
+  .tag-list-full{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;}
+  .tag-full{display:flex;align-items:center;gap:8px;border:1px dashed var(--bark-soft);border-radius:5px 5px 5px 1px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--bark);text-decoration:none;background:var(--sand-deep);}
+  .tag-full:hover{border-color:var(--clay);color:var(--clay);}
+  .tag-dot{width:6px;height:6px;border-radius:50%;background:var(--moss);flex-shrink:0;}
+  .tag-full .ext{margin-left:auto;opacity:.5;font-size:11px;}
+  .detail-actions{display:flex;gap:9px;margin-bottom:6px;}
+  .action-btn.full{padding:10px 13px;font-size:13px;}
+  .comment-list{display:flex;flex-direction:column;gap:13px;margin-bottom:14px;}
+  .comment{display:flex;gap:9px;}
+  .comment-avatar{width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;}
+  .comment-head{font-size:12.5px;margin-bottom:2px;}
+  .comment-head span{color:var(--bark-soft);font-weight:400;margin-left:6px;}
+  .comment-body{font-size:13px;color:var(--bark-soft);line-height:1.4;}
+  .comment-form{display:flex;gap:8px;}
+  .comment-input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px;background:var(--sand);}
+
+  .upload-box{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--bark-soft);margin-bottom:14px;cursor:pointer;}
+  .upload-box span{font-size:20px;display:block;margin-bottom:3px;}
+  .upload-box p{margin:0;font-size:12.5px;}
+  .photo-preview-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .photo-preview{width:54px;height:54px;border-radius:8px;background-size:cover;background-position:center;position:relative;}
+  .photo-preview .rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--clay);color:#fff;font-size:10px;border:none;cursor:pointer;}
+  .suggest-textarea{width:100%;min-height:64px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;resize:vertical;margin-bottom:14px;background:var(--sand);}
+  .tag-row{display:flex;gap:6px;margin-bottom:8px;}
+  .tag-input{flex:1;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;background:var(--sand);}
+  .tag-row .rm{background:transparent;border:none;color:var(--clay);font-size:13px;cursor:pointer;padding:0 4px;}
+  .add-tag-link{font-size:12px;font-weight:700;color:var(--teal);cursor:pointer;display:inline-block;margin-bottom:16px;}
+  .allowlist-note{font-size:11px;color:var(--bark-soft);margin:-4px 0 16px;}
+  .responding-to{font-size:12px;color:var(--bark-soft);}
+  select.field-input{appearance:none;}
+
+  .proto-note{text-align:center;font-size:12px;color:var(--bark-soft);padding:0 0 50px;}
+  .spinner-note{text-align:center;padding:60px 20px;color:var(--bark-soft);grid-column:1/-1;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">Setup Swap</div>
+  </div>
+  <nav id="navArea"></nav>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Show your enclosure.<br>Borrow someone else's ideas.</h1>
+    <p>Post your setup, tag exactly what's in it, and see what other keepers would change.</p>
+  </div>
+  <div class="filter-row" id="filterRow"></div>
+  <div class="feed" id="feed"><div class="spinner-note">Loading setups...</div></div>
+</div>
+
+<div class="overlay" id="authOverlay">
+  <div class="panel">
+    <button class="close-btn" data-close="authOverlay">✕</button>
+    <div class="auth-tabs">
+      <div class="auth-tab active" data-tab="login">Log in</div>
+      <div class="auth-tab" data-tab="signup">Sign up</div>
+    </div>
+    <div id="authForm"></div>
+  </div>
+</div>
+
+<div class="overlay" id="detailOverlay">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<div class="overlay" id="composeOverlay">
+  <div class="panel" id="composePanel"></div>
+</div>
+
+<script>
+/* ---------------- Supabase setup ---------------- */
+const SUPABASE_URL = 'https://jwxwmpcivjigusoihuxr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_FhLUqcLHUuMDdN-wBN1kuA_mRfblPvz';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null; // { id, email, username }
+let posts = [];
+let activeFilter = 'All';
+let suggestTargetId = null;
+let photoFiles = []; // raw File objects queued for upload
+let photoPreviews = []; // local preview data URLs matching photoFiles
+
+const SPECIES = ['Tortoise','Bearded dragon','Gecko','Snake','Aquatic','Other'];
+
+/* ---------------- Auth ---------------- */
+function usernameFromEmail(email){ return (email||'').split('@')[0]; }
+
+async function refreshSession(){
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){
+    currentUser = { id: data.session.user.id, email: data.session.user.email, username: data.session.user.user_metadata?.username || usernameFromEmail(data.session.user.email) };
+  } else {
+    currentUser = null;
+  }
+  renderNav();
+}
+
+function renderAuthForm(tab){
+  const form = document.getElementById('authForm');
+  if(tab==='login'){
+    form.innerHTML = `
+      <label class="field-label">Username</label>
+      <input class="field-input" id="loginUser" placeholder="e.g. dan_h">
+      <label class="field-label">Password</label>
+      <input class="field-input" type="password" id="loginPass">
+      <div class="form-error" id="authError" style="display:none;"></div>
+      <button class="btn btn-primary" style="width:100%;" id="loginBtn">Log in</button>
+    `;
+    document.getElementById('loginBtn').onclick = doLogin;
+  } else {
+    form.innerHTML = `
+      <label class="field-label">Choose a username</label>
+      <input class="field-input" id="signupUser" placeholder="e.g. dan_h">
+      <label class="field-label">Choose a password</label>
+      <input class="field-input" type="password" id="signupPass">
+      <div class="form-error" id="authError" style="display:none;"></div>
+      <button class="btn btn-primary" style="width:100%;" id="signupBtn">Create account</button>
+      <p class="form-note">Small group test — please don't reuse a sensitive password here.</p>
+    `;
+    document.getElementById('signupBtn').onclick = doSignup;
+  }
+}
+
+function fakeEmailFor(username){
+  // Supabase auth needs an email — we synthesize one from the username so people don't need a real inbox.
+  return `${username.toLowerCase().replace(/[^a-z0-9_]/g,'')}@setupswap.local`;
+}
+
+async function doSignup(){
+  const u = document.getElementById('signupUser').value.trim();
+  const p = document.getElementById('signupPass').value;
+  const err = document.getElementById('authError');
+  err.style.display='none';
+  if(!u || !p){ err.style.display='block'; err.textContent='Enter a username and password.'; return; }
+  if(p.length<6){ err.style.display='block'; err.textContent='Password should be at least 6 characters.'; return; }
+  const btn = document.getElementById('signupBtn'); btn.disabled = true; btn.textContent = 'Creating...';
+  const { data, error } = await sb.auth.signUp({
+    email: fakeEmailFor(u),
+    password: p,
+    options: { data: { username: u } }
+  });
+  btn.disabled = false; btn.textContent = 'Create account';
+  if(error){
+    err.style.display='block';
+    err.textContent = error.message.includes('already') ? 'That username is taken — try another.' : error.message;
+    return;
+  }
+  await refreshSession();
+  closeOverlay('authOverlay');
+  loadAndRenderFeed();
+}
+
+async function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('authError');
+  err.style.display='none';
+  if(!u || !p){ err.style.display='block'; err.textContent='Enter a username and password.'; return; }
+  const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'Logging in...';
+  const { data, error } = await sb.auth.signInWithPassword({ email: fakeEmailFor(u), password: p });
+  btn.disabled = false; btn.textContent = 'Log in';
+  if(error){ err.style.display='block'; err.textContent = 'Username or password not right.'; return; }
+  await refreshSession();
+  closeOverlay('authOverlay');
+  loadAndRenderFeed();
+}
+
+async function logout(){ await sb.auth.signOut(); currentUser = null; renderNav(); loadAndRenderFeed(); }
+
+/* ---------------- Nav ---------------- */
+function renderNav(){
+  const nav = document.getElementById('navArea');
+  if(currentUser){
+    nav.innerHTML = `
+      <span class="who">Signed in as <b>@${escapeHtml(currentUser.username)}</b></span>
+      <button class="btn btn-primary" id="newPostBtn">+ New setup</button>
+      <button class="btn btn-ghost" id="logoutBtn">Log out</button>
+    `;
+    document.getElementById('newPostBtn').onclick = ()=> openComposeForNewPost();
+    document.getElementById('logoutBtn').onclick = logout;
+  } else {
+    nav.innerHTML = `<button class="btn btn-primary" id="signInBtn">Log in / Sign up</button>`;
+    document.getElementById('signInBtn').onclick = ()=>{ renderAuthForm('login'); openOverlay('authOverlay'); };
+  }
+}
+
+/* ---------------- Filters ---------------- */
+function renderFilters(){
+  const row = document.getElementById('filterRow');
+  const chips = ['All', ...SPECIES];
+  row.innerHTML = chips.map(c=>`<div class="filter-chip ${c===activeFilter?'active':''}" data-sp="${c}">${c}</div>`).join('');
+  row.querySelectorAll('.filter-chip').forEach(chip=>{
+    chip.onclick = ()=>{ activeFilter = chip.dataset.sp; renderFilters(); renderFeed(); };
+  });
+}
+
+/* ---------------- Data loading ---------------- */
+async function loadAndRenderFeed(){
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `<div class="spinner-note">Loading setups...</div>`;
+  const { data: postRows, error } = await sb
+    .from('posts')
+    .select('*, comments(*)')
+    .order('created_at', { ascending:false });
+  if(error){
+    feed.innerHTML = `<div class="empty-state"><h3>Couldn't load the feed</h3><p>${escapeHtml(error.message)}</p></div>`;
+    return;
+  }
+  posts = (postRows||[]).map(r=>({
+    id: r.id,
+    author: r.author,
+    species: r.species,
+    title: r.title,
+    caption: r.caption,
+    photos: r.photos || [],
+    tags: r.tags || [],
+    comments: (r.comments||[]).sort((a,b)=> new Date(a.created_at)-new Date(b.created_at)),
+    respondingTo: r.responding_to,
+    respondingToAuthor: r.responding_to_author,
+    repostOf: r.repost_of,
+    createdAt: new Date(r.created_at).getTime()
+  }));
+  renderFeed();
+}
+
+function renderFeed(){
+  const feed = document.getElementById('feed');
+  let visible = posts.slice();
+  if(activeFilter !== 'All'){ visible = visible.filter(p=>p.species===activeFilter); }
+
+  if(visible.length===0){
+    feed.innerHTML = `<div class="empty-state"><h3>No setups here yet</h3><p>${currentUser? "Be the first to post one." : "Log in to post the first one."}</p></div>`;
+    return;
+  }
+
+  feed.innerHTML = visible.map(p=>{
+    const cover = p.photos && p.photos[0] ? p.photos[0] : '';
+    const extra = p.photos && p.photos.length>1 ? `<span class="photo-count">${p.photos.length} photos</span>` : '';
+    const repostBadge = p.respondingTo ? `<span class="repost-badge">Suggested</span>` : '';
+    const tagPreview = (p.tags||[]).slice(0,3).map(t=>`<span class="tag">${escapeHtml(t.name)}</span>`).join('');
+    const moreTags = (p.tags||[]).length>3 ? `<span class="tag">+${p.tags.length-3} more</span>` : '';
+    const respondingLine = p.respondingTo ? `From <b>@${escapeHtml(p.author)}</b>, responding to <b>@${escapeHtml(p.respondingToAuthor)}</b>` : `Posted by <b>@${escapeHtml(p.author)}</b>`;
+    return `
+      <div class="card" data-id="${p.id}">
+        <div class="card-photo" style="background-image:url('${cover}')">
+          <span class="species-eyebrow">${escapeHtml(p.species)}</span>
+          ${repostBadge}
+          ${extra}
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">${escapeHtml(p.title)}</h3>
+          <div class="card-meta">${respondingLine}</div>
+          <div class="tag-rack">${tagPreview}${moreTags}</div>
+          <div class="card-actions">
+            <button class="action-btn repost" data-action="repost" data-id="${p.id}">↻ Repost</button>
+            <button class="action-btn suggest" data-action="suggest" data-id="${p.id}">✎ Suggest</button>
+            <span class="comment-count">${(p.comments||[]).length} comments</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  feed.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      const actionBtn = e.target.closest('[data-action]');
+      const id = card.dataset.id;
+      if(actionBtn){
+        e.stopPropagation();
+        if(!currentUser){ renderAuthForm('login'); openOverlay('authOverlay'); return; }
+        if(actionBtn.dataset.action==='repost') doRepost(id);
+        else openComposeForSuggest(id);
+      } else {
+        openDetail(id);
+      }
+    });
+  });
+}
+
+/* ---------------- Repost ---------------- */
+async function doRepost(id){
+  const original = posts.find(p=>p.id===id);
+  if(!original) return;
+  const { error } = await sb.from('posts').insert({
+    author: currentUser.username,
+    species: original.species,
+    title: original.title,
+    caption: original.caption,
+    photos: original.photos,
+    tags: original.tags,
+    repost_of: original.id
+  });
+  if(error){ alert('Could not repost: '+error.message); return; }
+  loadAndRenderFeed();
+}
+
+/* ---------------- Detail view ---------------- */
+function openDetail(id){
+  const p = posts.find(x=>x.id===id);
+  if(!p) return;
+  const panel = document.getElementById('detailPanel');
+  const photos = p.photos && p.photos.length ? p.photos : [''];
+  const thumbs = photos.map((ph,i)=>`<div class="thumb ${i===0?'active':''}" data-src="${ph}" style="background-image:url('${ph}')"></div>`).join('');
+  const tagList = (p.tags||[]).map(t=> t.link
+      ? `<a class="tag-full" href="${escapeAttr(t.link)}" target="_blank" rel="noopener"><span class="tag-dot"></span>${escapeHtml(t.name)}<span class="ext">↗</span></a>`
+      : `<div class="tag-full"><span class="tag-dot"></span>${escapeHtml(t.name)}</div>`
+  ).join('') || `<p class="form-note">No products tagged.</p>`;
+  const respondingLine = p.respondingTo ? `<p class="responding-to">Responding to <b>@${escapeHtml(p.respondingToAuthor)}</b>'s setup</p>` : '';
+  const comments = (p.comments||[]).map(c=>`
+    <div class="comment">
+      <div class="comment-avatar">${escapeHtml(c.author.slice(0,2).toUpperCase())}</div>
+      <div>
+        <div class="comment-head"><b>@${escapeHtml(c.author)}</b><span>${timeAgo(new Date(c.created_at).getTime())}</span></div>
+        <div class="comment-body">${escapeHtml(c.text)}</div>
+      </div>
+    </div>`).join('') || `<p class="form-note">No comments yet.</p>`;
+
+  panel.innerHTML = `
+    <button class="close-btn" data-close="detailOverlay">✕</button>
+    <div class="detail-gallery">
+      <div class="gallery-main" id="galleryMain" style="background-image:url('${photos[0]}')"></div>
+      <div class="gallery-thumbs">${thumbs}</div>
+    </div>
+    <div class="detail-content">
+      <span class="species-eyebrow static">${escapeHtml(p.species)}</span>
+      <h2 class="detail-title">${escapeHtml(p.title)}</h2>
+      <div class="card-meta">Posted by <b>@${escapeHtml(p.author)}</b></div>
+      ${respondingLine}
+      <p class="detail-caption">${escapeHtml(p.caption||'')}</p>
+      <h4 class="section-label">Tagged in this setup</h4>
+      <div class="tag-list-full">${tagList}</div>
+      <div class="detail-actions">
+        <button class="action-btn repost full" id="detailRepost">↻ Repost</button>
+        <button class="action-btn suggest full" id="detailSuggest">✎ Suggest an alternative</button>
+      </div>
+      <h4 class="section-label" style="margin-top:22px;">Comments (${(p.comments||[]).length})</h4>
+      <div class="comment-list">${comments}</div>
+      ${currentUser ? `
+        <div class="comment-form">
+          <input class="comment-input" id="commentInput" placeholder="Add a comment...">
+          <button class="btn btn-primary" id="commentBtn">Post</button>
+        </div>` : `<p class="form-note">Log in to comment.</p>`}
+    </div>
+  `;
+  panel.querySelector('[data-close]').onclick = ()=> closeOverlay('detailOverlay');
+  panel.querySelectorAll('.thumb').forEach(t=>{
+    t.onclick = ()=>{
+      panel.querySelectorAll('.thumb').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('galleryMain').style.backgroundImage = `url('${t.dataset.src}')`;
+    };
+  });
+  document.getElementById('detailRepost').onclick = ()=>{
+    if(!currentUser){ closeOverlay('detailOverlay'); renderAuthForm('login'); openOverlay('authOverlay'); return; }
+    doRepost(p.id); closeOverlay('detailOverlay');
+  };
+  document.getElementById('detailSuggest').onclick = ()=>{
+    if(!currentUser){ closeOverlay('detailOverlay'); renderAuthForm('login'); openOverlay('authOverlay'); return; }
+    closeOverlay('detailOverlay');
+    openComposeForSuggest(p.id);
+  };
+  if(currentUser){
+    document.getElementById('commentBtn').onclick = async ()=>{
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if(!text) return;
+      const { error } = await sb.from('comments').insert({ post_id: p.id, author: currentUser.username, text });
+      if(error){ alert('Could not post comment: '+error.message); return; }
+      await loadAndRenderFeed();
+      openDetail(id);
+    };
+  }
+  openOverlay('detailOverlay');
+}
+
+/* ---------------- Compose: new post / suggest ---------------- */
+function openComposeForNewPost(){
+  suggestTargetId = null;
+  photoFiles = []; photoPreviews = [];
+  renderComposeForm();
+  openOverlay('composeOverlay');
+}
+function openComposeForSuggest(id){
+  suggestTargetId = id;
+  photoFiles = []; photoPreviews = [];
+  renderComposeForm();
+  openOverlay('composeOverlay');
+}
+
+function renderComposeForm(){
+  const target = suggestTargetId ? posts.find(p=>p.id===suggestTargetId) : null;
+  const panel = document.getElementById('composePanel');
+  panel.innerHTML = `
+    <button class="close-btn" data-close="composeOverlay">✕</button>
+    ${target ? `<span class="responding-to">Responding to <b>@${escapeHtml(target.author)}</b>'s ${escapeHtml(target.species.toLowerCase())} setup</span>` : ''}
+    <h3 class="display" style="margin:6px 0 16px;">${target ? 'Suggest your alternative' : 'Post your setup'}</h3>
+
+    <div class="upload-box" id="uploadBox">
+      <span>＋</span>
+      <p>Add photos${target ? ' (optional)' : ''}</p>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+    </div>
+    <div class="photo-preview-row" id="previewRow"></div>
+
+    ${!target ? `
+      <label class="field-label">Species</label>
+      <select class="field-input" id="speciesSelect">${SPECIES.map(s=>`<option>${s}</option>`).join('')}</select>
+      <label class="field-label">Title</label>
+      <input class="field-input" id="titleInput" placeholder="e.g. Outdoor cherry head enclosure">
+    ` : ''}
+
+    <label class="field-label">${target ? 'What would you change?' : 'Caption'}</label>
+    <textarea class="suggest-textarea" id="captionInput" placeholder="${target ? "e.g. I'd swap the soak tub for something with lower sides..." : 'Tell people about this setup...'}"></textarea>
+
+    <label class="field-label">Tag products used</label>
+    <div id="tagRows"></div>
+    <span class="add-tag-link" id="addTagLink">+ Add another product</span>
+    <p class="allowlist-note">Links should be from a recognized retailer (Amazon, Chewy, etc.) — flagged links go to review.</p>
+
+    <div class="form-error" id="composeError" style="display:none;"></div>
+    <button class="btn btn-primary" style="width:100%;padding:11px;" id="submitPostBtn">${target ? `Post suggestion, tag @${escapeHtml(target.author)}` : 'Post setup'}</button>
+  `;
+
+  panel.querySelector('[data-close]').onclick = ()=> closeOverlay('composeOverlay');
+
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  uploadBox.onclick = ()=> fileInput.click();
+  fileInput.onchange = handleFiles;
+
+  document.getElementById('addTagLink').onclick = ()=> addTagRow();
+  addTagRow();
+  renderPhotoPreviews();
+
+  document.getElementById('submitPostBtn').onclick = submitCompose;
+}
+
+function addTagRow(){
+  const rows = document.getElementById('tagRows');
+  const row = document.createElement('div');
+  row.className = 'tag-row';
+  row.innerHTML = `
+    <input type="text" class="tag-input tag-name" placeholder="Product name">
+    <input type="text" class="tag-input tag-link" placeholder="Link">
+    <button class="rm" type="button">✕</button>
+  `;
+  row.querySelector('.rm').onclick = ()=> row.remove();
+  rows.appendChild(row);
+}
+
+function renderPhotoPreviews(){
+  const row = document.getElementById('previewRow');
+  row.innerHTML = photoPreviews.map((src,i)=>`
+    <div class="photo-preview" style="background-image:url('${src}')">
+      <button class="rm" data-i="${i}">✕</button>
+    </div>`).join('');
+  row.querySelectorAll('.rm').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = parseInt(btn.dataset.i);
+      photoFiles.splice(i,1); photoPreviews.splice(i,1);
+      renderPhotoPreviews();
+    };
+  });
+}
+
+function handleFiles(e){
+  const files = Array.from(e.target.files).slice(0, 6 - photoFiles.length);
+  files.forEach(file=>{
+    photoFiles.push(file);
+    const reader = new FileReader();
+    reader.onload = (ev)=>{ photoPreviews.push(ev.target.result); renderPhotoPreviews(); };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function resizeImageFile(file, maxDim=900, quality=0.75){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w>h && w>maxDim){ h = h*(maxDim/w); w = maxDim; }
+        else if(h>maxDim){ w = w*(maxDim/h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=> resolve(blob), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadPhotos(){
+  const urls = [];
+  for(const file of photoFiles){
+    const blob = await resizeImageFile(file);
+    const path = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+    const { error } = await sb.storage.from('setup-photos').upload(path, blob, { contentType:'image/jpeg' });
+    if(error) throw error;
+    const { data } = sb.storage.from('setup-photos').getPublicUrl(path);
+    urls.push(data.publicUrl);
+  }
+  return urls;
+}
+
+async function submitCompose(){
+  const errBox = document.getElementById('composeError');
+  errBox.style.display = 'none';
+  const submitBtn = document.getElementById('submitPostBtn');
+  const caption = document.getElementById('captionInput').value.trim();
+  const tagRows = Array.from(document.querySelectorAll('.tag-row')).map(r=>({
+    name: r.querySelector('.tag-name').value.trim(),
+    link: r.querySelector('.tag-link').value.trim()
+  })).filter(t=>t.name);
+
+  submitBtn.disabled = true; submitBtn.textContent = 'Posting...';
+  try{
+    let photoUrls = [];
+    if(photoFiles.length){ photoUrls = await uploadPhotos(); }
+
+    if(suggestTargetId){
+      const target = posts.find(p=>p.id===suggestTargetId);
+      if(!caption && photoUrls.length===0 && tagRows.length===0){
+        throw new Error('Add a comment, photo, or tagged product first.');
+      }
+      const { error } = await sb.from('posts').insert({
+        author: currentUser.username,
+        species: target.species,
+        title: `Alternative for: ${target.title}`,
+        caption,
+        photos: photoUrls.length ? photoUrls : target.photos,
+        tags: tagRows.length ? tagRows : target.tags,
+        responding_to: target.id,
+        responding_to_author: target.author
+      });
+      if(error) throw error;
+    } else {
+      const species = document.getElementById('speciesSelect').value;
+      const title = document.getElementById('titleInput').value.trim();
+      if(!title) throw new Error('Give your setup a title.');
+      if(photoUrls.length===0) throw new Error('Add at least one photo.');
+      const { error } = await sb.from('posts').insert({
+        author: currentUser.username,
+        species, title, caption,
+        photos: photoUrls,
+        tags: tagRows
+      });
+      if(error) throw error;
+    }
+    closeOverlay('composeOverlay');
+    await loadAndRenderFeed();
+  }catch(err){
+    errBox.style.display = 'block';
+    errBox.textContent = err.message || 'Something went wrong posting that.';
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.textContent = suggestTargetId ? `Post suggestion` : 'Post setup';
+  }
+}
+
+/* ---------------- Utilities ---------------- */
+function openOverlay(id){ document.getElementById(id).classList.add('show'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(str){ return escapeHtml(str); }
+function timeAgo(ts){
+  const diff = Math.floor((Date.now()-ts)/1000);
+  if(diff<60) return 'just now';
+  if(diff<3600) return Math.floor(diff/60)+'m ago';
+  if(diff<86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderAuthForm(tab.dataset.tab);
+  };
+});
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.onclick = ()=> closeOverlay(btn.dataset.close);
+});
+document.getElementById('authOverlay').addEventListener('click', (e)=>{ if(e.target.id==='authOverlay') closeOverlay('authOverlay'); });
+document.getElementById('detailOverlay').addEventListener('click', (e)=>{ if(e.target.id==='detailOverlay') closeOverlay('detailOverlay'); });
+document.getElementById('composeOverlay').addEventListener('click', (e)=>{ if(e.target.id==='composeOverlay') closeOverlay('composeOverlay'); });
+
+/* ---------------- Init ---------------- */
+renderNav();
+renderFilters();
+refreshSession().then(loadAndRenderFeed);
+</script>
+</body>
+</html>
